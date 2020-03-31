@@ -1,4 +1,11 @@
 class Data:
+
+    # TODO: add external state vectors
+    linear_acc_shank_x = []
+    linear_acc_shank_z = []
+    abs_velocity_rotation_shank = []
+    abs_orientation_shank = []
+
     angle_data = [[0.024193548387096697, 1.4605338281473],
     [0.10483870967741926, 1.3756066228946615],
     [0.19354838709677413, 1.468027405081358],
@@ -422,7 +429,7 @@ class Data:
     # figure 6
     # NMPC with apadtive constraints
     nmpc_adaptive_constraints_qsc = 0.040
-    
+
     muscle_activation_level_fig6 = [[0, 0.020689655172413834],
     [0.00985915492957748, 0.01379310344827589],
     [0.01830985915492958, 0.01379310344827589],
