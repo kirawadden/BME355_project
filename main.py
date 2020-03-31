@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.signal
 from data import Data
+from ankle_model import FootDropAnkleModel
 import math
 
 
@@ -36,10 +37,19 @@ def plot_data():
     plt.show()
 
     radius = 0.4
-    
+
+
+def run_simulation():
+    foot_drop = FootDropAnkleModel()
+    soln = foot_drop.simulate(4)
+    plt.plot(soln.t, soln.y[0], 'r')
+    plt.plot(soln.t, soln.y[1], 'b')
+    # plt.plot(soln.t, soln.y[2], 'g')
+    plt.show()
+
 
 def main():
-    plot_data()
+    run_simulation()
 
 
 if __name__ == '__main__':
