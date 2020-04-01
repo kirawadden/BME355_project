@@ -7,6 +7,7 @@ import math
 
 
 def plot_data():
+    #### NOT BEING USED CURRENTLY - KIRA APR 1
     A = np.asarray(Data.angle_data)
     angle_rad = []
     for val in A[:,1]:
@@ -43,7 +44,7 @@ def run_simulation():
     foot_drop = FootDropAnkleModel()
     # foot_drop.simulate(4.0)
     # foot_drop.simulate_rk4()
-    soln = foot_drop.simulate(4.0)
+    soln = foot_drop.simulate(0.35)
     plt.plot(soln.t, soln.y[0], 'r')
     plt.show()
     # print(foot_drop.muscle_ex_data)
