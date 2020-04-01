@@ -1,6 +1,8 @@
 import numpy as np
 import math
+import matplotlib.pyplot as plt
 import scipy.integrate
+import random
 from data import Data
 
 class FootDropAnkleModel:
@@ -8,9 +10,9 @@ class FootDropAnkleModel:
   # constructor, put constants here
     def __init__(self):
         self.foot_mass = 1.0275  # kg
-        self.centre_of_foot_mass_wrt_ankle =11.45  # cm
+        self.centre_of_foot_mass_wrt_ankle = 0.1145 # cf -> m --> original 11.45  # cm
         self.interia_of_foot_around_ankle = 0.0197  # J -> (kg*m^2) 
-        self.ta_moment_arm_wrt_ankle = 3.7  # d -> cm
+        self.ta_moment_arm_wrt_ankle = 0.037 # 3.7[cm]  # d -> m
             
         self.time_activation = 0.01  # seconds
         self.time_deactivation = 0.04  # seconds
@@ -24,13 +26,13 @@ class FootDropAnkleModel:
         self.max_isometric_force = 600  # N
         # defines range of muslce displacement where a force still remains perceptible
         self.shape_param = 0.56  # shape param of f_fl
-        self.const_tendon_length = 22.3 # lt -> cm
-        self.muscle_tendon_length_rest = 32.1 # lmt,0 -> cm
+        self.const_tendon_length = 0.223 # 22.3 [cm]lt -> m
+        self.muscle_tendon_length_rest = 0.321 # m --> original 32.1 # lmt,0 -> cm
         self.elastic_torque_params = [2.1, -0.08, -7.97, 0.19, -1.79] # [a1, a2, a3, a4], Tela
 
         # TODO: MAKE THIS VECTOR NOT CONST
         self.muscle_excitation = 0.5 #[0, 1] # TODO: figure out how to calculate this or initialize!!!!!!!!!!!!!!!! AKA: u1 in the paper
-
+        self.muscle_ex_data = []
   # state vector x = [x1, x2, x3] = [fact, alpha_f, rot_vel_f]
   # x1 --> Dynamic activation level of foot, values 0 to 1
   # derivative of state vector: long af
@@ -40,6 +42,14 @@ class FootDropAnkleModel:
   # absolute velocity rotation of the shank
   # ^^ THIS DATA NEEDS TO BE DONE IN REAL TIME --> We will take it from the graphs and use their experiemental data
   
+    def random_exitation_gen(self, t):
+        # random.seed()
+        # return random.random()
+        for i in range(len(Data.muscle_excitation_level_fig3)):
+            if Data.muscle_excitation_level_fig3[i][0] > t:
+                # self.muscle_ex_data.append(Data.muscle_excitation_level_fig3[i][1])
+                return Data.muscle_excitation_level_fig3[i][1]
+
     def get_current_ext_vector(self, x_ext, t):
         """
         :param t: time
@@ -49,6 +59,7 @@ class FootDropAnkleModel:
         # TODO: return value closer to time vs. just at i
         # TODO: ensure that this works properly
         # iterate through all data points in corresponding data array
+        t += 0.2
         for i in range(len(x_ext)-1):
             # and x_ext[i+1][0] <= t
             if x_ext[i][0] > t:
@@ -61,7 +72,7 @@ class FootDropAnkleModel:
         :param alpha: absolute orientation of foot wrt horizontal axis 
         :return: gravity torque of the foot around the ankle
         """
-        g = 9.81  # acceleration of gravity
+        g = 9.81  # acceleration of gravity m/s^2
         return -(self.foot_mass * self.centre_of_foot_mass_wrt_ankle * math.cos(alpha) * g)
 
 
@@ -79,8 +90,8 @@ class FootDropAnkleModel:
         :param x: state vector
         :return: force velocity
         """
-        x_ext4 = self.get_current_ext_vector(Data.abs_velocity_rotation_shank, t)
-        velocity_ce = self.ta_moment_arm_wrt_ankle * (x_ext4 - x[1])
+        x_ext4 = self.get_current_ext_vector(Data.abs_velocity_rotation_shank, t) 
+        velocity_ce = self.ta_moment_arm_wrt_ankle * (x_ext4 - x[2])
 
         # velocity_ce < 0 -> contraction
         if velocity_ce < 0:
@@ -99,17 +110,17 @@ class FootDropAnkleModel:
         :return: tibialus anterior muscular force
         """
         # non-linear relationship linking generated force to length of muscle and therefore to ankle joint angle
-        x_ext3 = self.get_current_ext_vector(Data.abs_orientation_shank, t)
+        x_ext3 = self.get_current_ext_vector(Data.abs_orientation_shank, t) #* (math.pi/180)
         length_muscle_tendon = self.muscle_tendon_length_rest - self.ta_moment_arm_wrt_ankle * (x_ext3 - x[1])
         length_ce =  length_muscle_tendon - self.const_tendon_length
+
         # # TODO: find wtf the optimal length muscle tendon is
-        length_ce_opt = 32.1
-        f_fl_eqn = -(length_ce - length_ce_opt) / (self.shape_param*length_ce_opt)
-        f_fl = math.exp(math.pow(f_fl_eqn,2))
+        length_ce_opt = 0.321 # 32.1 [cm] -> m
+        f_fl_eqn = (length_ce - length_ce_opt) / (self.shape_param*length_ce_opt)
+        f_fl = math.exp(-math.pow(f_fl_eqn,2))
         f_fv = self.compute_force_velocity(t, x)
-        x_ext3 = self.get_current_ext_vector(Data.abs_orientation_shank, t)
-        x_ext4 = self.get_current_ext_vector(Data.abs_velocity_rotation_shank, t)
-        return x[0] * self.max_isometric_force * f_fl * f_fv * (x_ext4 - x[1])
+
+        return x[0] * self.max_isometric_force * f_fl * f_fv 
 
 
     # eqn 6
@@ -141,8 +152,8 @@ class FootDropAnkleModel:
         # external state vector
         x_ext1 = self.get_current_ext_vector(Data.linear_acc_shank_x, t)
         x_ext2 = self.get_current_ext_vector(Data.linear_acc_shank_z, t)
-        x_ext3 = self.get_current_ext_vector(Data.abs_orientation_shank, t)
-        x_ext4 = self.get_current_ext_vector(Data.abs_velocity_rotation_shank, t)
+        x_ext3 = self.get_current_ext_vector(Data.abs_orientation_shank, t) #* (math.pi/180)
+        x_ext4 = self.get_current_ext_vector(Data.abs_velocity_rotation_shank, t) # * (180/math.pi)
 
         # TODO: get parameters needed to calculate derivatives
         Fm = self.compute_ta_muscular_force(t, x)
@@ -150,19 +161,22 @@ class FootDropAnkleModel:
         T_grav = self.compute_gravity_torque(x2)
         T_acc = self.compute_acceleration_torque(x_ext1, x_ext2, x2)
 
+        self.muscle_excitation = self.random_exitation_gen(t)  # TODO: remove when done
+        
         # calc derivative of state vector
-        dt_x1 = (self.muscle_excitation - x1) * ((self.muscle_excitation / self.time_activation) - ((1 - self.muscle_excitation) / self.time_deactivation))
-        dt_x2 = x3
-        dt_x3 = 1/self.interia_of_foot_around_ankle*(Fm*self.ta_moment_arm_wrt_ankle + T_grav + T_acc + T_eta + self.viscosity_parameter*(x_ext4-x3))
-
+        dt_x1 = (self.muscle_excitation - x1) * ((self.muscle_excitation / self.time_activation) - ((1 - self.muscle_excitation) / self.time_deactivation)) # (unitless activation)/seconds
+        dt_x2 = float(x3) # degrees/s
+        dt_x3 = (1/self.interia_of_foot_around_ankle)*(Fm*self.ta_moment_arm_wrt_ankle + T_grav + T_acc + T_eta + self.viscosity_parameter*(x_ext4-x3)) # degrees/s^2
         # return derivative state vector
-        return [dt_x1, dt_x2, dt_x3]
+        return np.array([dt_x1, dt_x2, dt_x3])
 
     def simulate(self, sim_duration):
         """
         :param sim_duration: duration of the simulation in seconds
         """
-        x = [0, 0, 0]  # TODO: maybe pass these into simulation
 
-        return scipy.integrate.solve_ivp(self.compute_state_vector_derivative, (1, sim_duration), x, method='RK45', max_step=0.01)
-        
+        x_init = [0, -15, 0]  
+        sol = scipy.integrate.solve_ivp(self.compute_state_vector_derivative, [0.01, .35], x_init, method='RK45', max_step = 0.01)
+        return sol
+
+    
