@@ -11,18 +11,19 @@ def run_simulation():
     Runs simulation for 0.35 s (swing phase). Plots solution (state vector).
     """
     foot_drop = FootDropAnkleModel()
+    foot_drop.normalize_times()
     soln = foot_drop.simulate(0.35)
-    plt.plot(soln.t, soln.y[0], 'r')
+    plt.plot((soln.t-1)*0.35, soln.y[0]/2, 'r')
     plt.title('Muscle Activation vs. Time')
     plt.xlabel('Time (s)')
     plt.ylabel('Activation Level')
     plt.show()
-    plt.plot(soln.t, soln.y[1], 'b')
+    plt.plot((soln.t-1)*0.35, soln.y[1], 'b')
     plt.title('Orientation of Foot vs. Time')
     plt.ylabel('Orientation (deg)')
     plt.xlabel('Time (s)')
     plt.show()
-    plt.plot(soln.t, soln.y[2], 'g')
+    plt.plot((soln.t-1)*0.35, soln.y[2], 'g')
     plt.title('Rotational Velocity of Foot vs. Time')
     plt.ylabel('Velocity (deg/s)')
     plt.xlabel('Time (s)')
@@ -38,15 +39,15 @@ def graph_data():
     graphs.
     """
     # external state vector 1 -> linear acceleration of shank x-direction
-    x_ext1 = np.array(Data.linear_acc_shank_x)
+    x_ext1 = Data.linear_acc_shank_x
     # external state vector 2 -> linear acceleration of shank z-direction
-    x_ext2 = np.array(Data.linear_acc_shank_z)
+    x_ext2 = Data.linear_acc_shank_z
     # external state vector 3 -> orientation of shank 
-    x_ext3 = np.array(Data.abs_orientation_shank) 
+    x_ext3 = Data.abs_orientation_shank
     # external state vector 4 -> rotational velocity of shank
-    x_ext4 = np.array(Data.abs_velocity_rotation_shank)
+    x_ext4 = Data.abs_velocity_rotation_shank
     # input vector (u)
-    u1 = np.array(Data.muscle_excitation_level_fig3)
+    u1 = Data.muscle_excitation_level_fig3
 
     plt.plot(u1[:, 0], u1[:, 1])
     plt.title('Muscle Excitation vs. Time')

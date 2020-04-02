@@ -26,30 +26,68 @@ class FootDropAnkleModel:
         
         # defines range of muscle displacement where a force still remains perceptible
         self.shape_param = 0.56  # shape param of f_fl
-        self.const_tendon_length = 0.223 # 22.3 [cm]lt -> m
+        self.const_tendon_length = 0.223 # 22.3 [cm] lt -> m
         self.muscle_tendon_length_rest = 0.321 # m --> original 32.1 # lmt,0 -> cm
         self.elastic_torque_params = [2.1, -0.08, -7.97, 0.19, -1.79] # [a1, a2, a3, a4], Tela
-  
+        self.muscle_excitation_vector = Data.muscle_excitation_level_fig3
+    #     self.ext1 = Data.linear_acc_shank_x
+    #     self.ext2 = Data.linear_acc_shank_z
+    #     self.ext3 = Data.abs_orientation_shank
+    #     self.ext4 = Data.abs_velocity_rotation_shank
+        self.external_vector = [Data.linear_acc_shank_x, Data.linear_acc_shank_z, 
+                                Data.abs_orientation_shank, Data.abs_velocity_rotation_shank]
 
-    def get_current_muscle_excitation(self, t):
-        for i in range(len(Data.muscle_excitation_level_fig3)):
-            if Data.muscle_excitation_level_fig3[i][0] > t:
-                return Data.muscle_excitation_level_fig3[i][1]
+
+    def normalize_times(self):
+    #     self.ext1[:,0] /= 0.54
+    #     self.ext2[:,0] /= 0.54
+    #     self.ext3[:,0] /= 0.54
+    #     self.ext4[:,0] /= 0.54
+        for state in self.external_vector:
+            state[:,0] /= 0.54
+        self.external_vector[2][:,1] /= 5
+        self.external_vector[3][:,1] /= 5
+        self.muscle_excitation_vector[:,0] /= 0.35
+        self.muscle_excitation_vector[:,] += 1
 
 
-    def get_current_ext_vector(self, x_ext, t):
-        """
-        :param t: time
-        :param x_ext: 2D array containing time poins and data points for external state vecctors
-        :return data value of external state vector closest to passed in time point: 
-        """
-        # iterate through all data points in corresponding data array
-        # swing phase starts for external state vector at 0.55s, so time is adjusted to this point 
-        # in simulation
-        t += 0.55
-        for i in range(len(x_ext)-1):
-            if x_ext[i][0] > t:
-                return x_ext[i-1][1]
+    def get_current_muscle_excitation(self, time):
+        for i in range(len(self.muscle_excitation_vector)):
+            if self.muscle_excitation_vector[i, 0] > time:
+                return self.muscle_excitation_vector[i, 1]
+
+
+    # def get_current_ext_vector(self, x_ext, t):
+    #     """
+    #     :param t: time
+    #     :param x_ext: 2D array containing time poins and data points for external state vecctors
+    #     :return data value of external state vector closest to passed in time point: 
+    #     """
+    #     # iterate through all data points in corresponding data array
+    #     # swing phase starts for external state vector at 0.55s, so time is adjusted to this point 
+    #     # in simulation
+    #     norm_x_ext = x_ext
+    #     norm_x_ext[:,0] /= 0.54
+    #     for i in range(len(norm_x_ext)-1):
+    #         if norm_x_ext[i, 0] > t:
+    #             return norm_x_ext[i-1, 1]
+
+    def get_current_ext_vector(self, time):
+        current_values = []
+        # for state in range(len(self.external_vector)):
+        for state in self.external_vector:
+            for i in range(len(state)-1):
+                if state[i,0] > time:
+                    # if state.all() == self.external_vector[2].all():
+                    #     state[i-1,1] *= -1
+                    current_values.append(state[i-1,1])
+            # for i in range(len(self.external_vector[state])-1):
+            #     if self.external_vector[state][i,0] > time:
+            #         if i == 2:
+            #             self.external_vector[state][i-1, 1] *= -1
+            #         current_values.append(self.external_vector[state][i-1,1])
+                    break
+        return current_values
 
 
     def compute_gravity_torque(self, x2):
@@ -141,11 +179,15 @@ class FootDropAnkleModel:
         x3 = x[2]
 
         # external state vector
-        x_ext1 = self.get_current_ext_vector(Data.linear_acc_shank_x, t)
-        x_ext2 = self.get_current_ext_vector(Data.linear_acc_shank_z, t)
-        x_ext3 = self.get_current_ext_vector(Data.abs_orientation_shank, t) 
-        x_ext4 = self.get_current_ext_vector(Data.abs_velocity_rotation_shank, t) 
-
+        # x_ext1 = self.get_current_ext_vector(Data.linear_acc_shank_x, t)
+        # x_ext2 = self.get_current_ext_vector(Data.linear_acc_shank_z, t)
+        # x_ext3 = self.get_current_ext_vector(Data.abs_orientation_shank, t) 
+        # x_ext4 = self.get_current_ext_vector(Data.abs_velocity_rotation_shank, t) 
+        current_external_vector = self.get_current_ext_vector(t)
+        x_ext1 = current_external_vector[0]
+        x_ext2 = current_external_vector[1]
+        x_ext3 = current_external_vector[2] 
+        x_ext4 = current_external_vector[3]
         # get parameters needed to calculate derivatives
         Fm = self.compute_ta_muscular_force(x1, x2, x3, x_ext3, x_ext4)
         T_eta = self.compute_passive_elastic_torque(x2)
@@ -167,6 +209,7 @@ class FootDropAnkleModel:
         :param sim_duration: duration of the simulation in seconds
         :return: solution to state derivative IVP
         """
-        x_init = [0, -15, 0]  
-        sol = scipy.integrate.solve_ivp(self.compute_state_vector_derivative, [0.01, sim_duration], x_init, method='RK45', max_step=0.01)
+        # normalize time
+        x_init = [0.25, -9, 1]
+        sol = scipy.integrate.solve_ivp(self.compute_state_vector_derivative, [1, 2], x_init, method='RK45', max_step=0.01)
         return sol
