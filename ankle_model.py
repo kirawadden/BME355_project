@@ -140,10 +140,12 @@ class FootDropAnkleModel:
         """
         # non-linear relationship linking generated force to length of muscle and therefore 
         # to ankle joint angle
-        length_muscle_tendon = self.muscle_tendon_length_rest - self.ta_moment_arm_wrt_ankle * (x_ext3 - x2)
+        length_muscle_tendon = self.muscle_tendon_length_rest + self.ta_moment_arm_wrt_ankle * (x_ext3 - x2)
         length_ce =  length_muscle_tendon - self.const_tendon_length
 
-        length_ce_opt = 0.321 # m
+        length_ce_opt = 0.08 # m
+        print("Lmt %s " % length_muscle_tendon)
+        # print("CE %s" % length_ce)
         f_fl_eqn = (length_ce - length_ce_opt) / (self.shape_param*length_ce_opt)
         f_fl = math.exp(-math.pow(f_fl_eqn,2))
         f_fv = self.compute_force_velocity(x3, x_ext4)
@@ -179,10 +181,6 @@ class FootDropAnkleModel:
         x3 = x[2]
 
         # external state vector
-        # x_ext1 = self.get_current_ext_vector(Data.linear_acc_shank_x, t)
-        # x_ext2 = self.get_current_ext_vector(Data.linear_acc_shank_z, t)
-        # x_ext3 = self.get_current_ext_vector(Data.abs_orientation_shank, t) 
-        # x_ext4 = self.get_current_ext_vector(Data.abs_velocity_rotation_shank, t) 
         current_external_vector = self.get_current_ext_vector(t)
         x_ext1 = current_external_vector[0]
         x_ext2 = current_external_vector[1]
@@ -204,12 +202,12 @@ class FootDropAnkleModel:
         return np.array([dt_x1, dt_x2, dt_x3])
 
 
-    def simulate(self, sim_duration):
+    def simulate(self, sim_duration, orientation=-15, activation=0.95):
         """
         :param sim_duration: duration of the simulation in seconds
         :return: solution to state derivative IVP
         """
         # normalize time
-        x_init = [0.25, -9, 1]
-        sol = scipy.integrate.solve_ivp(self.compute_state_vector_derivative, [1, 2], x_init, method='RK45', max_step=0.01)
+        x_init = [activation, orientation, 0]
+        sol = scipy.integrate.solve_ivp(self.compute_state_vector_derivative, [1, sim_duration], x_init, method='RK45', max_step=0.01)
         return sol

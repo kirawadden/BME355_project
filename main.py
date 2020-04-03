@@ -1,9 +1,20 @@
 import math
 import numpy as np
+import csv
 import matplotlib.pyplot as plt
 import scipy.signal
 from data import Data
 from ankle_model import FootDropAnkleModel
+
+
+def write_data(file_name, x_data, y_data):
+    with open(file_name, "w") as csv_file:
+        writer = csv.writer(csv_file, delimiter=',')
+        for i in range(len(x_data)):
+            row = [x_data[i],y_data[i]]
+            print("row: %s" % row)
+            writer.writerow(row)
+    # f.close()
 
 
 def run_simulation():
@@ -12,24 +23,49 @@ def run_simulation():
     """
     foot_drop = FootDropAnkleModel()
     foot_drop.normalize_times()
-    soln = foot_drop.simulate(0.35)
-    plt.plot((soln.t-1)*0.35, soln.y[0]/2, 'r')
-    plt.title('Muscle Activation vs. Time')
-    plt.xlabel('Time (s)')
-    plt.ylabel('Activation Level')
+    activation_values = [0, 0.25, 0.5, 0.75, 0.95] 
+    initial_orientations = [-15, -10, -5]
+    duration = 2
+    color = ['r', 'b', 'g', 'm', 'c']
+    for i in range(len(initial_orientations)):
+        soln = foot_drop.simulate(duration, orientation=initial_orientations[i])
+        ######## orientation of foot ########
+        # data to CSV
+        filename_orientation = f"orientation_{initial_orientations[i]}.csv"
+        write_data(filename_orientation, (soln.t-1)*0.35, soln.y[1])
+        # plot
+        plt.plot((soln.t-1)*0.35, soln.y[1], 'b', label="Initial Orientation = %s" % initial_orientations[i])
+        plt.title('Orientation of Foot vs. Time')
+        plt.ylabel('Orientation (deg)')
+        plt.xlabel('Time (s)')
+        plt.legend()
+        plt.show()
+        ######## foot velocity rotational ########
+        filename_velocity = f"velocity_{initial_orientations[i]}.csv"
+        write_data(filename_velocity, (soln.t-1)*0.35, soln.y[2])
+        plt.plot((soln.t-1)*0.35, soln.y[2], 'g', label="Initial Orientation = %s" % initial_orientations[i])
+        plt.title('Rotational Velocity of Foot vs. Time')
+        plt.ylabel('Velocity (deg/s)')
+        plt.xlabel('Time (s)')
+        plt.legend()
+        plt.show()
+        print(soln.message)
+        print(soln.status)
+    for j in range(len(activation_values)):
+        ######## activation ########
+        soln = foot_drop.simulate(duration, activation=activation_values[j])
+        # data to CSV
+        filename_activation = f"activation_{activation_values[j]}.csv"
+        write_data(filename_activation, (soln.t-1)*0.35, soln.y[0]/2)
+        # plot
+        plt.subplot(3,2,j+1)
+        plt.plot((soln.t-1)*0.35, soln.y[0]/2, color[j], label="Initial Activation Level = % s" % activation_values[j])
+        plt.title('Muscle Activation vs. Time')
+        plt.legend()
+        plt.xlabel('Time (s)')
+        plt.ylabel('Activation Level')
+    plt.tight_layout()
     plt.show()
-    plt.plot((soln.t-1)*0.35, soln.y[1], 'b')
-    plt.title('Orientation of Foot vs. Time')
-    plt.ylabel('Orientation (deg)')
-    plt.xlabel('Time (s)')
-    plt.show()
-    plt.plot((soln.t-1)*0.35, soln.y[2], 'g')
-    plt.title('Rotational Velocity of Foot vs. Time')
-    plt.ylabel('Velocity (deg/s)')
-    plt.xlabel('Time (s)')
-    plt.show()
-    print(soln.message)
-    print(soln.status)
 
 
 def graph_data():
@@ -95,7 +131,7 @@ def main():
     Program starting point
     """
     run_simulation()
-    graph_data()
+    # graph_data()
 
 
 if __name__ == '__main__':
