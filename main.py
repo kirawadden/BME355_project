@@ -12,7 +12,6 @@ def write_data(file_name, x_data, y_data):
         writer = csv.writer(csv_file, delimiter=',')
         for i in range(len(x_data)):
             row = [x_data[i],y_data[i]]
-            print("row: %s" % row)
             writer.writerow(row)
     # f.close()
 
@@ -65,6 +64,13 @@ def run_simulation():
         plt.xlabel('Time (s)')
         plt.ylabel('Activation Level')
     plt.tight_layout()
+    plt.show()
+
+    plt.plot((soln.t-1)*0.35, soln.y[0]/2, color[4], label="Initial Activation Level = % s" % activation_values[4])
+    plt.title('Muscle Activation vs. Time')
+    plt.legend()
+    plt.xlabel('Time (s)')
+    plt.ylabel('Activation Level')
     plt.show()
 
 
