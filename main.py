@@ -13,7 +13,7 @@ def write_data(file_name, x_data, y_data):
         for i in range(len(x_data)):
             row = [x_data[i],y_data[i]]
             writer.writerow(row)
-    # f.close()
+    f.close()
 
 
 def run_simulation():

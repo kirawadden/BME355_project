@@ -30,19 +30,11 @@ class FootDropAnkleModel:
         self.muscle_tendon_length_rest = 0.321 # m --> original 32.1 # lmt,0 -> cm
         self.elastic_torque_params = [2.1, -0.08, -7.97, 0.19, -1.79] # [a1, a2, a3, a4], Tela
         self.muscle_excitation_vector = Data.muscle_excitation_level_fig3
-    #     self.ext1 = Data.linear_acc_shank_x
-    #     self.ext2 = Data.linear_acc_shank_z
-    #     self.ext3 = Data.abs_orientation_shank
-    #     self.ext4 = Data.abs_velocity_rotation_shank
         self.external_vector = [Data.linear_acc_shank_x, Data.linear_acc_shank_z, 
                                 Data.abs_orientation_shank, Data.abs_velocity_rotation_shank]
 
 
     def normalize_times(self):
-    #     self.ext1[:,0] /= 0.54
-    #     self.ext2[:,0] /= 0.54
-    #     self.ext3[:,0] /= 0.54
-    #     self.ext4[:,0] /= 0.54
         for state in self.external_vector:
             state[:,0] /= 0.54
         self.external_vector[2][:,1] /= 5
@@ -57,35 +49,13 @@ class FootDropAnkleModel:
                 return self.muscle_excitation_vector[i, 1]
 
 
-    # def get_current_ext_vector(self, x_ext, t):
-    #     """
-    #     :param t: time
-    #     :param x_ext: 2D array containing time poins and data points for external state vecctors
-    #     :return data value of external state vector closest to passed in time point: 
-    #     """
-    #     # iterate through all data points in corresponding data array
-    #     # swing phase starts for external state vector at 0.55s, so time is adjusted to this point 
-    #     # in simulation
-    #     norm_x_ext = x_ext
-    #     norm_x_ext[:,0] /= 0.54
-    #     for i in range(len(norm_x_ext)-1):
-    #         if norm_x_ext[i, 0] > t:
-    #             return norm_x_ext[i-1, 1]
-
     def get_current_ext_vector(self, time):
         current_values = []
         # for state in range(len(self.external_vector)):
         for state in self.external_vector:
             for i in range(len(state)-1):
                 if state[i,0] > time:
-                    # if state.all() == self.external_vector[2].all():
-                    #     state[i-1,1] *= -1
                     current_values.append(state[i-1,1])
-            # for i in range(len(self.external_vector[state])-1):
-            #     if self.external_vector[state][i,0] > time:
-            #         if i == 2:
-            #             self.external_vector[state][i-1, 1] *= -1
-            #         current_values.append(self.external_vector[state][i-1,1])
                     break
         return current_values
 
